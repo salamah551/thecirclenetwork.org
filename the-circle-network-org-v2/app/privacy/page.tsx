@@ -1,0 +1,1 @@
+export default function P(){return (<div className='container' style={{padding:'24px 0'}}><div className='card'><h1>Privacy</h1><p>We respect your privacy. No ads. No resale of data.</p></div></div>)}
