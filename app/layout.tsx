@@ -1,12 +1,15 @@
+// the-circle-network-org-v2/app/layout.tsx
 import './globals.css';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic';   // <-- renamed
 import type { ReactNode } from 'react';
 
-const UserMenu = dynamic(() => import('@/components/UserMenu'), { ssr: false })
+const UserMenu = NextDynamic(() => import('@/components/UserMenu'), { ssr: false });
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// ...rest of file unchanged
 
 export const metadata = {
   title: 'The Circle Network — Invite‑Only',
