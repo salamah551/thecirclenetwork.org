@@ -1,29 +1,55 @@
-import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
+// app/api/stripe/checkout/route.ts
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
+
+export const runtime = 'nodejs'; // Stripe SDK requires Node.js runtime
+export const revalidate = 0;
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-04-10',
+});
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get('authorization') || ''
-    const token = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7) : null
-    if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 401 })
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('Missing STRIPE_SECRET_KEY');
+    }
 
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data: { user } } = await admin.auth.getUser(token)
-    if (!user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    // Optional: allow overriding priceId via request body, else use env default
+    const body = (await req.json().catch(() => ({}))) as {
+      priceId?: string;
+      customerEmail?: string;
+      metadata?: Record<string, string>;
+    };
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
-    const price = process.env.NEXT_PUBLIC_STRIPE_MEMBERSHIP_PRICE_ID!
+    const priceId =
+      body.priceId || process.env.NEXT_PUBLIC_STRIPE_MEMBERSHIP_PRICE_ID;
+
+    if (!priceId) {
+      return NextResponse.json(
+        { error: 'Missing Stripe price ID.' },
+        { status: 400 }
+      );
+    }
+
+    const origin =
+      process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      line_items: [{ price, quantity: 1 }],
-      success_url: `${process.env.APP_URL}/dashboard`,
-      cancel_url: `${process.env.APP_URL}/billing`,
-      customer_email: user.email || undefined,
-      metadata: { user_id: user.id, type: 'membership' }
-    })
-    return NextResponse.json({ url: session.url })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Stripe error' }, { status: 500 })
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/billing/cancelled`,
+      allow_promotion_codes: true,
+      customer_email: body.customerEmail,
+      metadata: body.metadata,
+    });
+
+    return NextResponse.json({ id: session.id, url: session.url });
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Unknown Stripe error';
+    console.error('Stripe checkout error:', err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
