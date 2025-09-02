@@ -1,0 +1,1 @@
+export default function T(){return (<div className='container' style={{padding:'24px 0'}}><div className='card'><h1>Terms</h1><p>By using The Circle Network you agree to our terms of service.</p></div></div>)}
