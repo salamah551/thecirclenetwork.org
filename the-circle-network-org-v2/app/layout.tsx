@@ -1,7 +1,7 @@
 // app/layout.tsx
 import './globals.css';
 import Link from 'next/link';
-import NextDynamic from 'next/dynamic';   // <-- renamed
+import NextDynamic from 'next/dynamic';   
 import type { ReactNode } from 'react';
 
 const UserMenu = NextDynamic(() => import('@/components/UserMenu'), { ssr: false });
