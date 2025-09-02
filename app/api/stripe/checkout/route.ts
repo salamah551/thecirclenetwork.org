@@ -2,11 +2,11 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-export const runtime = 'nodejs'; // Stripe SDK requires Node.js runtime
+export const runtime = 'nodejs';
 export const revalidate = 0;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10',
+  apiVersion: '2024-04-10', // or remove this line entirely
 });
 
 export async function POST(req: Request) {
@@ -15,7 +15,6 @@ export async function POST(req: Request) {
       throw new Error('Missing STRIPE_SECRET_KEY');
     }
 
-    // Optional: allow overriding priceId via request body, else use env default
     const body = (await req.json().catch(() => ({}))) as {
       priceId?: string;
       customerEmail?: string;
