@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 export const revalidate = 0;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10', // or remove this line entirely
+  apiVersion: '2024-04-10'
 });
 
 export async function POST(req: Request) {
@@ -37,17 +37,16 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,
       success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/billing/cancelled`,
-      allow_promotion_codes: true,
       customer_email: body.customerEmail,
-      metadata: body.metadata,
+      metadata: body.metadata
     });
 
     return NextResponse.json({ id: session.id, url: session.url });
   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : 'Unknown Stripe error';
+    const message = err instanceof Error ? err.message : 'Unknown Stripe error';
     console.error('Stripe checkout error:', err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
